@@ -156,6 +156,28 @@ class _QuizScreenState extends State<QuizScreen> {
                             Navigator.pushNamed(context, '/quizpai');
                           },
                         ),
+                        SizedBox(height: screenWidth * 0.04),
+                        _buildRowCard(
+                          title: 'ilmu Pengetahuan Alam',
+                          images: ['assets/images/ipa.png'],
+                          screenWidth: screenWidth,
+                          imageWidthFactor: 0.19,
+                          imageHeightFactor: 0.19,
+                          ontap: () {
+                            Navigator.pushNamed(context, '/quizipa');
+                          },
+                        ),
+                        SizedBox(height: screenWidth * 0.04),
+                        _buildRowCard(
+                          title: 'ilmu Pengetahuan Sosial',
+                          images: ['assets/images/ips.png'],
+                          screenWidth: screenWidth,
+                          imageWidthFactor: 0.19,
+                          imageHeightFactor: 0.19,
+                          ontap: () {
+                            Navigator.pushNamed(context, '/quizips');
+                          },
+                        ),
                       ],
                     ),
                   ),

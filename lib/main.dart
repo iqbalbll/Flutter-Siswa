@@ -6,6 +6,8 @@ import 'screens/presensi/presensi_bing.dart';
 import 'screens/presensi/presensi_bind.dart';
 import 'screens/presensi/presensi_pai.dart';
 import 'screens/presensi/presensi_pkn.dart';
+import 'screens/presensi/presensi_ipa.dart';
+import 'screens/presensi/presensi_ips.dart';
 import 'screens/quiz/quiz.dart';
 import 'screens/quiz/quizmtk.dart';
 import 'screens/quiz/quizbing.dart';
@@ -39,6 +41,8 @@ class MyApp extends StatelessWidget {
          '/presensi_bind': (context) => const PresensibindScreen(),
          '/presensi_pai': (context) => const PresensipaiScreen(),
          '/presensi_pkn': (context) => const PresensipknScreen(),
+          '/presensi_ipa': (context) => const PresensiipaScreen(),
+          '/presensi_ips': (context) => const PresensiipsScreen(),
         '/quiz': (context) => const QuizScreen(),
         '/quizmtk': (context) => const QuizmtkScreen(),
         '/quizbing': (context) => const QuizbingScreen(),
