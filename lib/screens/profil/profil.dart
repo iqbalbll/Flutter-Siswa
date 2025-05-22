@@ -36,6 +36,7 @@ class _ProfilePageState extends State<ProfilePage> {
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       final profilePic = data['data']['profile_picture'];
+      if (profilePic == null || profilePic.isEmpty) return null;
       return 'http://3.0.151.126/storage/$profilePic';
     }
     return null;
