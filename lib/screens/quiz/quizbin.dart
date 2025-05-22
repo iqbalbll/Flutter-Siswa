@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'quiz.dart';
+import 'QuizStart.dart'; 
 
 /// Widget header yang bisa digunakan ulang
 Widget _buildHeader(BuildContext context, double screenWidth, double screenHeight) {
@@ -47,8 +48,8 @@ Widget _buildHeader(BuildContext context, double screenWidth, double screenHeigh
             color: const Color(0xFF006181),
           ),
         ),
-        const Spacer(), // agar teks berada di tengah, seimbang dengan ikon
-        SizedBox(width: screenWidth * 0.08), // Placeholder untuk posisi out icon
+        const Spacer(),
+        SizedBox(width: screenWidth * 0.08), // agar teks tetap di tengah
       ],
     ),
   );
@@ -83,7 +84,6 @@ class QuizbinScreen extends StatelessWidget {
           children: [
             _buildHeader(context, screenWidth, screenHeight),
             SizedBox(height: screenHeight * 0.03),
-
             Padding(
               padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.06),
               child: Column(
@@ -99,7 +99,6 @@ class QuizbinScreen extends StatelessWidget {
                       color: const Color.fromARGB(255, 0, 0, 0),
                     ),
                   ),
-
                   SizedBox(height: screenHeight * 0.035),
 
                   // Kartu Sub BAB
@@ -143,22 +142,30 @@ class QuizbinScreen extends StatelessWidget {
                           SizedBox(height: screenHeight * 0.015),
                           Align(
                             alignment: Alignment.centerRight,
-                            child: Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: screenWidth * 0.05,
-                                vertical: screenHeight * 0.01,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF71E7FF),
-                                borderRadius: BorderRadius.circular(30.0),
-                              ),
-                              child: Text(
-                                'Mulai',
-                                style: TextStyle(
-                                  fontSize: screenWidth * 0.045,
-                                  fontFamily: 'Karla',
-                                  color: const Color(0xFF006181),
-                                  fontWeight: FontWeight.w800,
+                            child: InkWell(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => const QuizApp()),
+                                );
+                              },
+                              child: Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: screenWidth * 0.05,
+                                  vertical: screenHeight * 0.01,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF71E7FF),
+                                  borderRadius: BorderRadius.circular(30.0),
+                                ),
+                                child: Text(
+                                  'Mulai',
+                                  style: TextStyle(
+                                    fontSize: screenWidth * 0.045,
+                                    fontFamily: 'Karla',
+                                    color: const Color(0xFF006181),
+                                    fontWeight: FontWeight.w800,
+                                  ),
                                 ),
                               ),
                             ),
@@ -167,7 +174,7 @@ class QuizbinScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-
+                  
                   SizedBox(height: screenHeight * 0.03),
                 ],
               ),

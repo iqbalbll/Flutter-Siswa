@@ -1,5 +1,8 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'home.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -11,32 +14,51 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-  final String useremail = "3123521032"; 
-  final String pass = "123";
-  String notif = " ";
+  String notif = "";
 
-  void login(String email, String password) {
-  if (email == useremail && password == pass) {
-    setState(() {
-      notif = " ";
-    });
-
-    Navigator.of(context).push(_createFadeRoute());
-  } else {
-    setState(() {
-      notif = "Nomor Induk atau password salah";
-    });
+  Future<int?> login(String email, String password) async {
+    final url = Uri.parse('http://3.0.151.126/api/admin/penggunas');
+    try {
+      final response = await http.get(url);
+      print('Status code: ${response.statusCode}');
+      print('Response body: ${response.body}');
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> jsonResponse = json.decode(response.body);
+        final List users = jsonResponse['data']; // Ambil list user dari key 'data'
+        for (var user in users) {
+          if (user['email'] == email &&
+              user['password'] == password &&
+              user['role'] == 'siswa') { // hanya role guru
+            return user['id']; // Kembalikan userId
+          }
+        }
+      }
+    } catch (e) {
+      print('Error: $e');
+    }
+    return null;
   }
-}
 
+  void handleLogin() async {
+    final email = emailController.text;
+    final password = passwordController.text;
+    final userId = await login(email, password);
 
-  // Fungsi validasi nomor induk berbasis angka
-  String? validateNomorInduk(String? value) {
-    const pattern = r'^[0-9]{6,12}$'; // hanya angka, 6 sampai 12 digit
-    final regex = RegExp(pattern);
-    return value == null || !regex.hasMatch(value)
-        ? 'Masukkan Nomor Induk yang valid (hanya angka)'
-        : null;
+    if (!mounted) return;
+
+    if (userId != null) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt('userId', userId); // Simpan userId ke SharedPreferences
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => HomePage()),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Email atau password salah')),
+      );
+    }
   }
 
   @override
@@ -48,9 +70,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-          ),
+          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom + 20),
           child: Center(
             child: Container(
               color: Colors.white,
@@ -113,7 +133,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   SizedBox(height: screenHeight * 0.13),
 
-                  // FORM LOGIN + DEKORASI LOGO
                   Stack(
                     children: [
                       Padding(
@@ -130,7 +149,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                       ),
-
                       Padding(
                         padding: EdgeInsets.symmetric(
                           horizontal: screenWidth * 0.1,
@@ -140,7 +158,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text(
-                              'Nomor Induk',
+                              'Username',
                               style: TextStyle(
                                 color: Colors.black,
                                 fontSize: 14,
@@ -153,7 +171,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               controller: emailController,
                               hintText: 'Ketik Disini',
                               iconPath: 'assets/icons/user.png',
-                              validator: validateNomorInduk,
+                              keyboardType: TextInputType.text,
                             ),
                             const SizedBox(height: 16),
 
@@ -179,19 +197,14 @@ class _LoginScreenState extends State<LoginScreen> {
                               child: SizedBox(
                                 width: screenWidth * 0.4,
                                 child: ElevatedButton(
-                                  onPressed: () => login(
-                                    emailController.text.trim(),
-                                    passwordController.text.trim(),
-                                  ),
+                                  onPressed: () => handleLogin(),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: const Color(0xFF008EBD),
                                     foregroundColor: const Color(0xFF71E7FF),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(30),
                                     ),
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 12,
-                                    ),
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
                                     elevation: 2,
                                   ),
                                   child: const Text(
@@ -235,7 +248,7 @@ class _LoginScreenState extends State<LoginScreen> {
     required String hintText,
     required String iconPath,
     bool obscureText = false,
-    String? Function(String?)? validator,
+    TextInputType keyboardType = TextInputType.text,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -264,8 +277,7 @@ class _LoginScreenState extends State<LoginScreen> {
             child: TextFormField(
               controller: controller,
               obscureText: obscureText,
-              validator: validator,
-              keyboardType: TextInputType.number,
+              keyboardType: keyboardType,
               decoration: InputDecoration(
                 hintText: hintText,
                 hintStyle: const TextStyle(
@@ -300,4 +312,3 @@ Route _createFadeRoute() {
     },
   );
 }
-

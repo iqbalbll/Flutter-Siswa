@@ -1,8 +1,36 @@
 import 'package:flutter/material.dart';
 import 'presensi.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
-class PresensimtkScreen extends StatelessWidget {
+class PresensimtkScreen extends StatefulWidget {
   const PresensimtkScreen({Key? key}) : super(key: key);
+
+  @override
+  State<PresensimtkScreen> createState() => _PresensimtkScreenState();
+}
+
+class _PresensimtkScreenState extends State<PresensimtkScreen> {
+  List<dynamic> presensiList = [];
+
+  @override
+  void initState() {
+    super.initState();
+    fetchPresensi();
+  }
+
+  Future<void> fetchPresensi() async {
+    final response = await http.get(Uri.parse('http://3.0.151.126/api/admin/absensis'));
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      setState(() {
+        presensiList = data['data'];
+      });
+    } else {
+      print("Gagal mengambil data");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +52,6 @@ class PresensimtkScreen extends StatelessWidget {
                     alignment: Alignment.centerLeft,
                     child: InkWell(
                       onTap: () {
-                        print("Menuju halaman Home...");
                         Navigator.of(context).pushReplacement(
                           MaterialPageRoute(builder: (_) => const PresensiScreen()),
                         );
@@ -58,7 +85,6 @@ class PresensimtkScreen extends StatelessWidget {
                   ),
                   child: Column(
                     children: [
-                      // Informasi Mapel dan Guru
                       Container(
                         width: double.infinity,
                         padding: EdgeInsets.all(screenWidth * 0.05),
@@ -173,8 +199,6 @@ class PresensimtkScreen extends StatelessWidget {
                         ),
                       ),
                       SizedBox(height: screenHeight * 0.03),
-
-                      // Tabel History Presensi
                       Container(
                         width: double.infinity,
                         padding: EdgeInsets.symmetric(
@@ -245,32 +269,32 @@ class PresensimtkScreen extends StatelessWidget {
                                     ),
                                   ],
                                 ),
-                                TableRow(
-                                  children: [
-                                    Padding(
-                                      padding: EdgeInsets.all(screenWidth * 0.03),
-                                      child: Text(
-                                        '-',
-                                        style: TextStyle(
-                                          fontSize: screenWidth * 0.04,
-                                          color: Colors.grey,
+                                ...presensiList.map<TableRow>((item) {
+                                  return TableRow(
+                                    children: [
+                                      Padding(
+                                        padding: EdgeInsets.all(screenWidth * 0.03),
+                                        child: Text(
+                                          item['id'].toString(),
+                                          style: TextStyle(
+                                            fontSize: screenWidth * 0.04,
+                                          ),
+                                          textAlign: TextAlign.center,
                                         ),
-                                        textAlign: TextAlign.center,
                                       ),
-                                    ),
-                                    Padding(
-                                      padding: EdgeInsets.all(screenWidth * 0.03),
-                                      child: Text(
-                                        '-',
-                                        style: TextStyle(
-                                          fontSize: screenWidth * 0.04,
-                                          color: Colors.grey,
+                                      Padding(
+                                        padding: EdgeInsets.all(screenWidth * 0.03),
+                                        child: Text(
+                                          item['tanggal'],
+                                          style: TextStyle(
+                                            fontSize: screenWidth * 0.04,
+                                          ),
+                                          textAlign: TextAlign.center,
                                         ),
-                                        textAlign: TextAlign.center,
                                       ),
-                                    ),
-                                  ],
-                                ),
+                                    ],
+                                  );
+                                }).toList(),
                               ],
                             ),
                           ],

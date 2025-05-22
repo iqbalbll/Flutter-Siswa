@@ -1,12 +1,78 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/app_theme.dart';
 import 'jadwal.dart';
 import 'login.dart';
 import '../widgets/bottom_nav_bar.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  String namaLengkap = "User";
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNamaLengkap();
+  }
+
+  Future<void> _loadNamaLengkap() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token') ?? '';
+
+    if (token.isNotEmpty) {
+      final nama = await fetchNamaLengkap(token, prefs);
+      if (nama != null && mounted) {
+        setState(() {
+          namaLengkap = nama;
+        });
+      }
+    }
+  }
+
+  Future<String?> fetchNamaLengkap(
+    String token,
+    SharedPreferences prefs,
+  ) async {
+    final userId = prefs.getInt('userId');
+    print('userId dari SharedPreferences: $userId');
+    final response = await http.get(
+      Uri.parse('http://3.0.151.126/api/admin/siswas'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    print('Status code: ${response.statusCode}');
+    print('Response body: ${response.body}');
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final List<dynamic> siswaList =
+          data is Map && data['data'] is List ? data['data'] : [];
+      print('Data siswaList: ${siswaList.toString()}');
+
+      final siswa = siswaList.firstWhere(
+        (s) =>
+            s['pengguna_id'] != null &&
+            s['pengguna_id'].toString() == userId.toString(),
+        orElse: () => null,
+      );
+      print('Siswa ditemukan: ${siswa?.toString()}');
+      if (siswa != null && siswa is Map) {
+        return siswa['nama_lengkap'] ?? 'User';
+      } else {
+        print('Tidak ditemukan siswa dengan pengguna_id: ' + userId.toString());
+      }
+    } else {
+      print('Gagal fetch siswa: ${response.statusCode} ${response.body}');
+    }
+    return 'User';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -80,8 +146,9 @@ class HomePage extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Selamat Pagi', style: AppTheme.karlaBlue),
-                  Text('User', style: AppTheme.karlaBold),
+                  Text('Selamat Datang', style: AppTheme.karlaBlue),
+                  const SizedBox(height: 4),
+                  Text(namaLengkap, style: AppTheme.karlaBold),
                 ],
               ),
               InkWell(
@@ -195,20 +262,34 @@ class HomePage extends StatelessWidget {
                             0.5,
                           ), // Warna bayangan lebih gelap
                           offset: const Offset(4, 4), // Offset lebih besar
-                          blurRadius: 30, 
+                          blurRadius: 30,
                           spreadRadius: -11, // Spread lebih besar
                         ),
                       ],
                     ),
                     child: InkWell(
                       borderRadius: BorderRadius.circular(30),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const JadwalWidget(),
-                          ),
-                        );
+                      onTap: () async {
+                        // Ambil role dan id dari SharedPreferences
+                        final prefs = await SharedPreferences.getInstance();
+                        final userId = prefs.getInt('userId')?.toString() ?? '';
+                        final userRole =
+                            prefs.getString('userRole') ??
+                            'siswa'; // default siswa
+                        if (userId.isNotEmpty) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder:
+                                  (context) =>
+                                      JadwalWidget(role: userRole, id: userId),
+                            ),
+                          );
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('User belum login!')),
+                          );
+                        }
                       },
                       child: Padding(
                         padding: const EdgeInsets.symmetric(

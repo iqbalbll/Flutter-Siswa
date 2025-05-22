@@ -12,8 +12,8 @@ import 'screens/quiz/quizbing.dart';
 import 'screens/quiz/quizbin.dart';
 import 'screens/quiz/quizpai.dart';
 import 'screens/quiz/quizpkn.dart';
+import 'screens/quiz/QuizStart.dart';
 import 'screens/profil/profil.dart';
-import 'screens/profil/setting.dart';
 import 'screens/login.dart';
 import 'screens/welcome.dart';
 
@@ -45,8 +45,9 @@ class MyApp extends StatelessWidget {
         '/quizbin': (context) => const QuizbinScreen(),
         '/quizpai': (context) => const QuizpaiScreen(),
         '/quizpkn': (context) => const QuizpknScreen(),
-        '/profil': (context) => const ProfilScreen(),
-        '/setting': (context) => const ProfilSetting(),
+        '/QuizStart': (context) => const QuizApp(),
+        '/profil': (context) => const ProfilePage(),
+        
       },
     );
   }

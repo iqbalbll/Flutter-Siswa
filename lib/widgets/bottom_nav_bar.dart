@@ -39,23 +39,23 @@ class BottomNavBar extends StatelessWidget {
           return Expanded(
             child: GestureDetector(
               onTap: () {
-                // Navigasi berdasarkan index
-                switch (index) {
-                  case 0:
-                    Navigator.pushReplacementNamed(context, '/home');
-                    break;
-                  case 1:
-                    Navigator.pushReplacementNamed(context, '/presensi');
-                    break;
-                  case 2:
-                    Navigator.pushReplacementNamed(context, '/quiz');
-                    break;
-                  case 3:
-                    Navigator.pushReplacementNamed(context, '/profil');
-                    break;
-                }
-                onTap(index); // Memanggil callback untuk memperbarui state
-              },
+                    switch (index) {
+                      case 0:
+                        Navigator.of(context, rootNavigator: true).pushReplacementNamed('/home');
+                        break;
+                      case 1:
+                        Navigator.of(context, rootNavigator: true).pushReplacementNamed('/presensi');
+                        break;
+                      case 2:
+                        Navigator.of(context, rootNavigator: true).pushReplacementNamed('/quiz');
+                        break;
+                      case 3:
+                        Navigator.of(context, rootNavigator: true).pushReplacementNamed('/profil');
+                        break;
+                    }
+                    onTap(index);
+                  },
+
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [

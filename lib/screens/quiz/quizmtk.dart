@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'quiz.dart';
+import 'QuizStart.dart';
 
 /// Widget header yang bisa digunakan ulang
 Widget _buildHeader(BuildContext context, double screenWidth, double screenHeight) {
@@ -152,15 +153,33 @@ class QuizmtkScreen extends StatelessWidget {
                                 color: const Color(0xFF71E7FF),
                                 borderRadius: BorderRadius.circular(30.0),
                               ),
-                              child: Text(
-                                'Mulai',
-                                style: TextStyle(
-                                  fontSize: screenWidth * 0.045,
-                                  fontFamily: 'Karla',
-                                  color: const Color(0xFF006181),
-                                  fontWeight: FontWeight.w800,
+                              child: InkWell(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => const QuizApp()),
+                                );
+                              },
+                              child: Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: screenWidth * 0.05,
+                                  vertical: screenHeight * 0.01,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF71E7FF),
+                                  borderRadius: BorderRadius.circular(30.0),
+                                ),
+                                child: Text(
+                                  'Mulai',
+                                  style: TextStyle(
+                                    fontSize: screenWidth * 0.045,
+                                    fontFamily: 'Karla',
+                                    color: const Color(0xFF006181),
+                                    fontWeight: FontWeight.w800,
+                                  ),
                                 ),
                               ),
+                            ),
                             ),
                           ),
                         ],
