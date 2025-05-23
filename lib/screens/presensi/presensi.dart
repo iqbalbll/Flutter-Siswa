@@ -170,6 +170,28 @@ class _PresensiScreenState extends State<PresensiScreen> {
                             Navigator.pushNamed(context, '/presensi_pai');
                           },
                         ),
+                        SizedBox(height: screenWidth * 0.04),
+                        _buildRowCard(
+                          title: 'Ilmu Pengetahuan Alam',
+                          images: ['assets/images/ipa.png'],
+                          screenWidth: screenWidth,
+                          imageWidthFactor: 0.19,
+                          imageHeightFactor: 0.19,
+                          onTap: () {
+                            Navigator.pushNamed(context, '/presensi_ipa');
+                          },
+                        ),
+                        SizedBox(height: screenWidth * 0.04),
+                        _buildRowCard(
+                          title: 'Ilmu Pengetahuan Sosial',
+                          images: ['assets/images/ips.png'],
+                          screenWidth: screenWidth,
+                          imageWidthFactor: 0.19,
+                          imageHeightFactor: 0.19,
+                          onTap: () {
+                            Navigator.pushNamed(context, '/presensi_ips');
+                          },
+                        ),
                       ],
                     ),
                   ),
