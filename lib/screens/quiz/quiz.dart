@@ -241,7 +241,7 @@ class _QuizScreenState extends State<QuizScreen> {
                               borderRadius: BorderRadius.circular(
                                 screenWidth * 0.02,
                               ),
-                              child: Image.network(
+                              child: Image.asset(
                                 url,
                                 width: screenWidth * imageWidthFactor,
                                 height: screenWidth * imageHeightFactor,

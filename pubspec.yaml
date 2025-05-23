@@ -96,6 +96,8 @@ flutter:
     - assets/images/PAI.png
     - assets/images/pkn.png
     - assets/images/sibi.png
+    - assets/images/ipa.png
+    - assets/images/ips.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
