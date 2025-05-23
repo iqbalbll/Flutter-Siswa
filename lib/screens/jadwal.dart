@@ -7,7 +7,7 @@ class JadwalWidget extends StatefulWidget {
   final String role;
   final String id;
   const JadwalWidget({Key? key, required this.role, required this.id})
-      : super(key: key);
+    : super(key: key);
 
   @override
   State<JadwalWidget> createState() => _JadwalWidgetState();
@@ -15,7 +15,8 @@ class JadwalWidget extends StatefulWidget {
 
 class _JadwalWidgetState extends State<JadwalWidget> {
   Map<String, List<dynamic>> jadwalData = {};
-  Map<int, String> mataPelajaranCache = {}; // Cache untuk menyimpan nama mata pelajaran
+  Map<int, String> mataPelajaranCache =
+      {}; // Cache untuk menyimpan nama mata pelajaran
   bool isLoading = true;
 
   @override
@@ -34,9 +35,7 @@ class _JadwalWidgetState extends State<JadwalWidget> {
     try {
       final response = await http.get(
         Uri.parse('http://3.0.151.126/api/admin/mata-pelajarans/$mapelId'),
-        headers: {
-          'Accept': 'application/json',
-        },
+        headers: {'Accept': 'application/json'},
       );
 
       print('Debug - Mata Pelajaran API Response: ${response.body}');
@@ -62,7 +61,7 @@ class _JadwalWidgetState extends State<JadwalWidget> {
     try {
       // Base URL untuk jadwal
       String url = 'http://3.0.151.126/api/admin/jadwal-pelajarans';
-      
+
       // Filter berdasarkan role
       if (role == 'guru') {
         url += '?guru_id=$id';
@@ -74,15 +73,13 @@ class _JadwalWidgetState extends State<JadwalWidget> {
 
       final response = await http.get(
         Uri.parse(url),
-        headers: {
-          'Accept': 'application/json',
-        },
+        headers: {'Accept': 'application/json'},
       );
 
       if (response.statusCode == 200) {
         final decoded = json.decode(response.body);
         final List<dynamic> dataList = decoded['data'] ?? [];
-        
+
         // Mengumpulkan semua mapel_id yang unik
         Set<int> mapelIds = {};
         for (var item in dataList) {
@@ -93,15 +90,16 @@ class _JadwalWidgetState extends State<JadwalWidget> {
 
         // Mengambil data mata pelajaran untuk semua mapel_id
         await Future.wait(
-          mapelIds.map((mapelId) => fetchMataPelajaran(mapelId))
+          mapelIds.map((mapelId) => fetchMataPelajaran(mapelId)),
         );
 
         Map<String, List<dynamic>> grouped = {};
         for (var item in dataList) {
           String hari = (item['hari'] ?? '').toString().toLowerCase();
-          String formattedHari = hari.isNotEmpty
-              ? hari[0].toUpperCase() + hari.substring(1)
-              : 'Unknown';
+          String formattedHari =
+              hari.isNotEmpty
+                  ? hari[0].toUpperCase() + hari.substring(1)
+                  : 'Unknown';
 
           if (!grouped.containsKey(formattedHari)) {
             grouped[formattedHari] = [];
@@ -136,121 +134,126 @@ class _JadwalWidgetState extends State<JadwalWidget> {
     }
   }
 
-
-
   @override
   Widget build(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
       body: SafeArea(
-        child: isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : SingleChildScrollView(
-                child: Column(
-                  children: [
-                    // Header
-                    Container(
-                      constraints: BoxConstraints(
-                        maxWidth: screenWidth * 0.95,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.only(
-                          bottomLeft: Radius.circular(screenWidth * 0.08),
-                          bottomRight: Radius.circular(screenWidth * 0.08),
+        child:
+            isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      // Header
+                      Container(
+                        constraints: BoxConstraints(
+                          maxWidth: screenWidth * 0.95,
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.5),
-                            offset: Offset(
-                              screenWidth * 0.01,
-                              screenWidth * 0.01,
-                            ),
-                            blurRadius: screenWidth * 0.08,
-                            spreadRadius: -screenWidth * 0.03,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.only(
+                            bottomLeft: Radius.circular(screenWidth * 0.08),
+                            bottomRight: Radius.circular(screenWidth * 0.08),
                           ),
-                        ],
-                      ),
-                      padding: EdgeInsets.fromLTRB(
-                        screenWidth * 0.06,
-                        screenWidth * 0.06,
-                        screenWidth * 0.06,
-                        screenWidth * 0.1,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Flexible(
-                            flex: 1,
-                            child: InkWell(
-                              onTap: () {
-                                Navigator.of(context).pushReplacement(
-                                  MaterialPageRoute(
-                                    builder: (_) => const HomePage(),
-                                  ),
-                                );
-                              },
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Image.asset(
-                                    'assets/icons/out.png',
-                                    width: screenWidth * 0.08,
-                                    height: screenWidth * 0.08,
-                                  ),
-                                  SizedBox(height: screenWidth * 0.01),
-                                  Text(
-                                    'Keluar',
-                                    style: TextStyle(
-                                      fontSize: screenWidth * 0.03,
-                                      fontWeight: FontWeight.w800,
-                                      color: Colors.black,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.5),
+                              offset: Offset(
+                                screenWidth * 0.01,
+                                screenWidth * 0.01,
+                              ),
+                              blurRadius: screenWidth * 0.08,
+                              spreadRadius: -screenWidth * 0.03,
+                            ),
+                          ],
+                        ),
+                        padding: EdgeInsets.fromLTRB(
+                          screenWidth * 0.06,
+                          screenWidth * 0.06,
+                          screenWidth * 0.06,
+                          screenWidth * 0.1,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Flexible(
+                              flex: 1,
+                              child: InkWell(
+                                onTap: () {
+                                  Navigator.of(context).pushReplacement(
+                                    MaterialPageRoute(
+                                      builder: (_) => const HomePage(),
                                     ),
-                                  ),
-                                ],
+                                  );
+                                },
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Image.asset(
+                                      'assets/icons/out.png',
+                                      width: screenWidth * 0.08,
+                                      height: screenWidth * 0.08,
+                                    ),
+                                    SizedBox(height: screenWidth * 0.01),
+                                    Text(
+                                      'Keluar',
+                                      style: TextStyle(
+                                        fontSize: screenWidth * 0.03,
+                                        fontWeight: FontWeight.w800,
+                                        color: Colors.black,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
-                          SizedBox(width: screenWidth * 0.05),
-                          Flexible(
-                            flex: 3,
-                            child: Text(
-                              'Jadwal',
-                              style: TextStyle(
-                                fontSize: screenWidth * 0.06,
-                                color: const Color(0xFF006181),
-                                fontWeight: FontWeight.w800,
+                            SizedBox(width: screenWidth * 0.05),
+                            Flexible(
+                              flex: 3,
+                              child: Text(
+                                'Jadwal',
+                                style: TextStyle(
+                                  fontSize: screenWidth * 0.06,
+                                  color: const Color(0xFF006181),
+                                  fontWeight: FontWeight.w800,
+                                ),
                               ),
                             ),
-                          ),
-                          const Spacer(),
-                        ],
+                            const Spacer(),
+                          ],
+                        ),
                       ),
-                    ),
 
-                    const SizedBox(height: 30),
+                      const SizedBox(height: 30),
 
-                    // Grid Hari
-                    Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: screenWidth * 0.05,
+                      // Grid Hari
+                      Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: screenWidth * 0.05,
+                        ),
+                        child: Column(
+                          children: [
+                            _buildDayRow(['Senin'], screenWidth),
+                            const SizedBox(height: 23),
+                            _buildDayRow(['Selasa'], screenWidth),
+                            const SizedBox(height: 23),
+                            _buildDayRow(['Rabu'], screenWidth),
+                            const SizedBox(height: 23),
+                            _buildDayRow(['Kamis'], screenWidth),
+                            const SizedBox(height: 23),
+                            _buildDayRow(["Jum'at"], screenWidth),
+                            const SizedBox(height: 30),
+                            _buildDayRow(['Sabtu'], screenWidth),
+                            const SizedBox(height: 30),
+                          ],
+                        ),
                       ),
-                      child: Column(
-                        children: [
-                          _buildDayRow(['Senin', 'Selasa'], screenWidth),
-                          const SizedBox(height: 23),
-                          _buildDayRow(['Rabu', 'Kamis'], screenWidth),
-                          const SizedBox(height: 23),
-                          _buildDayRow(["Jum'at", 'Sabtu'], screenWidth),
-                          const SizedBox(height: 30),
-                        ],
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
       ),
     );
   }
@@ -259,7 +262,9 @@ class _JadwalWidgetState extends State<JadwalWidget> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children:
-          days.map((day) => Expanded(child: _buildDayCard(day, screenWidth))).toList(),
+          days
+              .map((day) => Expanded(child: _buildDayCard(day, screenWidth)))
+              .toList(),
     );
   }
 
@@ -313,12 +318,16 @@ class _JadwalWidgetState extends State<JadwalWidget> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Mata Pelajaran: ${item['nama_mapel']}',
-                      style: TextStyle(
-                        fontSize: screenWidth * 0.035,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
+                    Center(
+                      // Center text horizontally
+                      child: Text(
+                        'Mata Pelajaran: ${item['nama_mapel']}',
+                        style: TextStyle(
+                          fontSize: screenWidth * 0.035,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
+                        textAlign: TextAlign.center, // extra assurance
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -352,11 +361,11 @@ class _JadwalWidgetState extends State<JadwalWidget> {
     return jadwalList.map((item) {
       // Ambil nama mapel yang sudah ditambahkan saat fetch data
       String namaMapel = item['nama_mapel']?.toString() ?? '-';
-      
+
       // Format jam
       final jam_mulai = _formatJam(item['jam_mulai']?.toString() ?? '-');
       final jam_selesai = _formatJam(item['jam_selesai']?.toString() ?? '-');
-      
+
       return {
         'nama_mapel': namaMapel,
         'jam_mulai': jam_mulai,
