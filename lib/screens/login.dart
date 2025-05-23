@@ -38,7 +38,6 @@ class _LoginScreenState extends State<LoginScreen> {
     }
     return null;
   }
-
   void handleLogin() async {
     final email = emailController.text;
     final password = passwordController.text;
@@ -49,6 +48,17 @@ class _LoginScreenState extends State<LoginScreen> {
     if (userId != null) {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt('userId', userId); // Simpan userId ke SharedPreferences
+      
+      // Fetch user data and save name
+      final response = await http.get(
+        Uri.parse('http://3.0.151.126/api/admin/penggunas/$userId'),
+      );
+      if (response.statusCode == 200) {
+        final userData = json.decode(response.body);
+        if (userData['data'] != null) {
+          await prefs.setString('namaLengkap', userData['data']['nama']); 
+        }
+      }
 
       Navigator.pushReplacement(
         context,

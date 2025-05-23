@@ -20,26 +20,73 @@ class _ProfilePageState extends State<ProfilePage> {
     super.initState();
     loadUserId();
   }
-
   Future<void> loadUserId() async {
     final prefs = await SharedPreferences.getInstance();
+    final id = prefs.getInt('userId');
+    print('Loaded userId from SharedPreferences: $id');
     setState(() {
-      userId = prefs.getInt('userId'); // Simpan userId saat login
+      userId = id;
     });
-  }
-
-  Future<String?> fetchProfilePhotoUrl() async {
-    if (userId == null) return null;
-    final response = await http.get(
-      Uri.parse('http://3.0.151.126/api/admin/penggunas/$userId'),
-    );
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      final profilePic = data['data']['profile_picture'];
-      if (profilePic == null || profilePic.isEmpty) return null;
-      return 'http://3.0.151.126/storage/$profilePic';
+  }  Future<String?> fetchProfilePhotoUrl() async {
+    if (userId == null) {
+      print('UserId is null, cannot fetch profile photo');
+      return null;
     }
-    return null;
+
+    try {
+      print('Fetching profile photo for userId: $userId');
+      final response = await http.get(
+        Uri.parse('http://3.0.151.126/api/admin/penggunas/$userId'),
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+      );
+      
+      print('Response status code: ${response.statusCode}');
+      print('Response body: ${response.body}');
+      
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        
+        // Pastikan kita mengakses data dengan benar sesuai struktur response
+        final Map<String, dynamic>? userData = data['data'];
+        if (userData == null) {
+          print('No user data found in response');
+          return null;
+        }
+
+        final profilePic = userData['profile_picture'];
+        print('Profile picture value from API: $profilePic');
+        
+        if (profilePic != null && profilePic.toString().isNotEmpty) {
+          // Membuat URL lengkap untuk foto profil
+          String photoUrl;
+          if (profilePic.toString().startsWith('http')) {
+            photoUrl = profilePic.toString();
+          } else {
+            // Menghapus slash di awal jika ada untuk menghindari double slash
+            final cleanPath = profilePic.toString().startsWith('/') 
+                ? profilePic.toString().substring(1) 
+                : profilePic.toString();
+            photoUrl = 'http://3.0.151.126/storage/$cleanPath';
+          }
+          
+          print('Full photo URL generated: $photoUrl');
+          return photoUrl;
+        } else {
+          print('No profile picture found for user');
+          return null;
+        }
+      } else {
+        print('Failed to fetch profile. Status: ${response.statusCode}');
+        return null;
+      }
+    } catch (e, stackTrace) {
+      print('Error fetching profile photo: $e');
+      print('Stack trace: $stackTrace');
+      return null;
+    }
   }
 
   Future<Map<String, dynamic>?> fetchNamaDanNis() async {
@@ -160,28 +207,82 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
-                    children: [
-                      FutureBuilder<String?>(
+                    children: [                      FutureBuilder<String?>(
                         future: fetchProfilePhotoUrl(),
                         builder: (context, snapshot) {
                           if (snapshot.connectionState == ConnectionState.waiting) {
-                            return const CircularProgressIndicator();
-                          }
-                          if (snapshot.hasError || !snapshot.hasData || snapshot.data == null) {
-                            return CircleAvatar(
-                              radius: 100,
-                              backgroundColor: Colors.grey[300],
-                              child: const Icon(
-                                Icons.person,
-                                size: 100,
-                                color: Colors.white,
+                            return Container(
+                              width: 200,
+                              height: 200,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.grey[300],
+                              ),
+                              child: const Center(
+                                child: CircularProgressIndicator(),
                               ),
                             );
                           }
-                          return CircleAvatar(
-                            radius: 100,
-                            backgroundColor: Colors.grey[300],
-                            backgroundImage: NetworkImage(snapshot.data!),
+                          
+                          if (snapshot.hasError) {
+                            print('Error in FutureBuilder: ${snapshot.error}');
+                            return Container(
+                              width: 200,
+                              height: 200,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.grey[300],
+                              ),
+                              child: const Icon(
+                                Icons.error_outline,
+                                size: 100,
+                                color: Colors.red,
+                              ),
+                            );
+                          }
+                          
+                          return Container(
+                            width: 200,
+                            height: 200,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.grey[300],
+                              image: snapshot.data != null
+                                  ? DecorationImage(
+                                      image: NetworkImage(
+                                        snapshot.data!,
+                                        headers: {
+                                          'Cache-Control': 'no-cache',
+                                          'Accept': 'image/*',
+                                        },
+                                      ),
+                                      fit: BoxFit.cover,
+                                      onError: (error, stackTrace) {
+                                        print('Error loading image: $error');
+                                        print('Image URL that failed: ${snapshot.data}');
+                                        print('Stack trace: $stackTrace');
+                                        if (mounted) {
+                                          setState(() {});
+                                        }
+                                      },
+                                    )
+                                  : null,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.2),
+                                  spreadRadius: 2,
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: snapshot.data == null
+                                ? const Icon(
+                                    Icons.person,
+                                    size: 100,
+                                    color: Colors.white,
+                                  )
+                                : null,
                           );
                         },
                       ),

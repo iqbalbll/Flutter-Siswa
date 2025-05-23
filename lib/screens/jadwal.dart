@@ -284,8 +284,15 @@ class _JadwalWidgetState extends State<JadwalWidget> {
     final List<dynamic> jadwalList = jadwalData[hari] ?? [];
 
     return jadwalList.map((item) {
+      // Ambil nama mapel dari relasi mapel jika ada, berdasarkan mapel_id
+      String namaMapel = '-';
+      if (item['mapel'] != null && item['mapel'] is Map && item['mapel']['nama_mapel'] != null) {
+        namaMapel = item['mapel']['nama_mapel'].toString();
+      } else if (item['nama_mapel'] != null && item['nama_mapel'].toString().trim().isNotEmpty) {
+        namaMapel = item['nama_mapel'].toString();
+      }
       return {
-        'nama_mapel': (item['nama_mapel'] ?? '-').toString(),
+        'nama_mapel': namaMapel,
         'jam_mulai': (item['jam_mulai'] ?? '-').toString(),
         'jam_selesai': (item['jam_selesai'] ?? '-').toString(),
       };

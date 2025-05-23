@@ -23,53 +23,42 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     _loadNamaLengkap();
   }
-
   Future<void> _loadNamaLengkap() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token') ?? '';
-
-    if (token.isNotEmpty) {
-      final nama = await fetchNamaLengkap(token, prefs);
-      if (nama != null && mounted) {
-        setState(() {
-          namaLengkap = nama;
-        });
-      }
+    final nama = await fetchNamaLengkap();
+    if (nama != null && mounted) {
+      setState(() {
+        namaLengkap = nama;
+      });
     }
   }
 
-  Future<String?> fetchNamaLengkap(
-    String token,
-    SharedPreferences prefs,
-  ) async {
+  Future<String?> fetchNamaLengkap() async {
+    final prefs = await SharedPreferences.getInstance();
+    
+    // Try to get name from SharedPreferences first
+    final savedName = prefs.getString('namaLengkap');
+    if (savedName != null) {
+      return savedName;
+    }
+
+    // If not found in SharedPreferences, fetch from API
     final userId = prefs.getInt('userId');
-    print('userId dari SharedPreferences: $userId');
+    if (userId == null) return 'User';
+    
     final response = await http.get(
-      Uri.parse('http://3.0.151.126/api/admin/siswas'),
-      headers: {'Authorization': 'Bearer $token'},
+      Uri.parse('http://3.0.151.126/api/admin/penggunas/$userId'),
     );
-    print('Status code: ${response.statusCode}');
-    print('Response body: ${response.body}');
+    
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      final List<dynamic> siswaList =
-          data is Map && data['data'] is List ? data['data'] : [];
-      print('Data siswaList: ${siswaList.toString()}');
-
-      final siswa = siswaList.firstWhere(
-        (s) =>
-            s['pengguna_id'] != null &&
-            s['pengguna_id'].toString() == userId.toString(),
-        orElse: () => null,
-      );
-      print('Siswa ditemukan: ${siswa?.toString()}');
-      if (siswa != null && siswa is Map) {
-        return siswa['nama_lengkap'] ?? 'User';
-      } else {
-        print('Tidak ditemukan siswa dengan pengguna_id: ' + userId.toString());
+      if (data['data'] != null) {
+        final nama = data['data']['nama'];
+        if (nama != null) {
+          // Save name to SharedPreferences for future use
+          await prefs.setString('namaLengkap', nama);
+          return nama;
+        }
       }
-    } else {
-      print('Gagal fetch siswa: ${response.statusCode} ${response.body}');
     }
     return 'User';
   }
@@ -150,10 +139,11 @@ class _HomePageState extends State<HomePage> {
                   const SizedBox(height: 4),
                   Text(namaLengkap, style: AppTheme.karlaBold),
                 ],
-              ),
-              InkWell(
-                onTap: () {
-                  print("Menuju halaman Home...");
+              ),              InkWell(
+                onTap: () async {
+                  final prefs = await SharedPreferences.getInstance();
+                  await prefs.clear(); // Clear all saved data including name and userId
+                  if (!mounted) return;
                   Navigator.of(context).pushReplacement(
                     MaterialPageRoute(builder: (_) => const LoginScreen()),
                   );
