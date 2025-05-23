@@ -353,7 +353,7 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ],
               ),
-              child: Image.network(
+              child: Image.asset(
                 'assets/images/sibi.png',
                 width: screenWidth,
                 fit: BoxFit.contain,
