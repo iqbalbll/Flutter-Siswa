@@ -15,6 +15,7 @@ class JadwalWidget extends StatefulWidget {
 
 class _JadwalWidgetState extends State<JadwalWidget> {
   Map<String, List<dynamic>> jadwalData = {};
+  Map<int, String> mataPelajaranCache = {}; // Cache untuk menyimpan nama mata pelajaran
   bool isLoading = true;
 
   @override
@@ -23,55 +24,117 @@ class _JadwalWidgetState extends State<JadwalWidget> {
     fetchJadwal(role: widget.role, id: int.parse(widget.id));
   }
 
-  Future<void> fetchJadwal({required String role, required int id}) async {
-  setState(() {
-    isLoading = true;
-  });
+  // Fungsi untuk mengambil data mata pelajaran berdasarkan ID
+  Future<String> fetchMataPelajaran(int mapelId) async {
+    // Cek apakah data sudah ada di cache
+    if (mataPelajaranCache.containsKey(mapelId)) {
+      return mataPelajaranCache[mapelId] ?? '-';
+    }
 
-  String url = 'http://3.0.151.126/api/admin/jadwal-pelajarans';
-  if (role == 'guru') {
-    url += '?guru_id=$id';
-  } else if (role == 'siswa') {
-    url += '?kelas_id=$id';
+    try {
+      final response = await http.get(
+        Uri.parse('http://3.0.151.126/api/admin/mata-pelajarans/$mapelId'),
+        headers: {
+          'Accept': 'application/json',
+        },
+      );
+
+      print('Debug - Mata Pelajaran API Response: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final decoded = json.decode(response.body);
+        final String namaMapel = decoded['data']['nama_mapel'] ?? '-';
+        // Simpan ke cache
+        mataPelajaranCache[mapelId] = namaMapel;
+        return namaMapel;
+      }
+    } catch (e) {
+      print('Error fetching mata pelajaran: $e');
+    }
+    return '-';
   }
 
-  try {
-    final response = await http.get(Uri.parse(url));
-    if (response.statusCode == 200) {
-      final decoded = json.decode(response.body);
-      final List<dynamic> dataList = decoded['data'] ?? [];
+  Future<void> fetchJadwal({required String role, required int id}) async {
+    setState(() {
+      isLoading = true;
+    });
 
-      Map<String, List<dynamic>> grouped = {};
-      for (var item in dataList) {
-        String hari = (item['hari'] ?? '').toString().toLowerCase();
-        // Membuat key hari dengan huruf kapital di awal (misal 'Senin')
-        String formattedHari = hari.isNotEmpty
-            ? hari[0].toUpperCase() + hari.substring(1)
-            : 'Unknown';
-
-        if (!grouped.containsKey(formattedHari)) {
-          grouped[formattedHari] = [];
-        }
-        grouped[formattedHari]!.add(item);
+    try {
+      // Base URL untuk jadwal
+      String url = 'http://3.0.151.126/api/admin/jadwal-pelajarans';
+      
+      // Filter berdasarkan role
+      if (role == 'guru') {
+        url += '?guru_id=$id';
+      } else if (role == 'siswa') {
+        url += '?kelas_id=$id';
       }
 
+      print('Debug - Fetching URL: $url');
+
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Accept': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final decoded = json.decode(response.body);
+        final List<dynamic> dataList = decoded['data'] ?? [];
+        
+        // Mengumpulkan semua mapel_id yang unik
+        Set<int> mapelIds = {};
+        for (var item in dataList) {
+          if (item['mapel_id'] != null) {
+            mapelIds.add(int.parse(item['mapel_id'].toString()));
+          }
+        }
+
+        // Mengambil data mata pelajaran untuk semua mapel_id
+        await Future.wait(
+          mapelIds.map((mapelId) => fetchMataPelajaran(mapelId))
+        );
+
+        Map<String, List<dynamic>> grouped = {};
+        for (var item in dataList) {
+          String hari = (item['hari'] ?? '').toString().toLowerCase();
+          String formattedHari = hari.isNotEmpty
+              ? hari[0].toUpperCase() + hari.substring(1)
+              : 'Unknown';
+
+          if (!grouped.containsKey(formattedHari)) {
+            grouped[formattedHari] = [];
+          }
+
+          // Tambahkan nama mata pelajaran ke item
+          if (item['mapel_id'] != null) {
+            int mapelId = int.parse(item['mapel_id'].toString());
+            String namaMapel = mataPelajaranCache[mapelId] ?? '-';
+            item['nama_mapel'] = namaMapel;
+            print('Debug - Added mapel name for ID $mapelId: $namaMapel');
+          }
+
+          grouped[formattedHari]!.add(item);
+        }
+
+        setState(() {
+          jadwalData = grouped;
+          isLoading = false;
+        });
+      } else {
+        setState(() {
+          isLoading = false;
+        });
+        print('Failed to load jadwal: ${response.body}');
+      }
+    } catch (e) {
       setState(() {
-        jadwalData = grouped;
         isLoading = false;
       });
-    } else {
-      setState(() {
-        isLoading = false;
-      });
-      throw Exception('Failed to load jadwal, status code: ${response.statusCode}');
+      print('Error fetching jadwal: $e');
     }
-  } catch (e) {
-    setState(() {
-      isLoading = false;
-    });
-    print('Error fetching jadwal: $e');
   }
-}
 
 
 
@@ -287,18 +350,33 @@ class _JadwalWidgetState extends State<JadwalWidget> {
     final List<dynamic> jadwalList = jadwalData[hari] ?? [];
 
     return jadwalList.map((item) {
-      // Ambil nama mapel dari relasi mapel jika ada, berdasarkan mapel_id
-      String namaMapel = '-';
-      if (item['mapel'] != null && item['mapel'] is Map && item['mapel']['nama_mapel'] != null) {
-        namaMapel = item['mapel']['nama_mapel'].toString();
-      } else if (item['nama_mapel'] != null && item['nama_mapel'].toString().trim().isNotEmpty) {
-        namaMapel = item['nama_mapel'].toString();
-      }
+      // Ambil nama mapel yang sudah ditambahkan saat fetch data
+      String namaMapel = item['nama_mapel']?.toString() ?? '-';
+      
+      // Format jam
+      final jam_mulai = _formatJam(item['jam_mulai']?.toString() ?? '-');
+      final jam_selesai = _formatJam(item['jam_selesai']?.toString() ?? '-');
+      
       return {
         'nama_mapel': namaMapel,
-        'jam_mulai': (item['jam_mulai'] ?? '-').toString(),
-        'jam_selesai': (item['jam_selesai'] ?? '-').toString(),
+        'jam_mulai': jam_mulai,
+        'jam_selesai': jam_selesai,
       };
     }).toList();
+  }
+
+  // Helper function untuk format jam
+  String _formatJam(String jam) {
+    if (jam == '-') return jam;
+    try {
+      // Mengambil hanya bagian jam:menit dari format waktu
+      final parts = jam.split(':');
+      if (parts.length >= 2) {
+        return '${parts[0]}:${parts[1]}';
+      }
+    } catch (e) {
+      print('Debug - Error formatting jam: $e');
+    }
+    return jam;
   }
 }
