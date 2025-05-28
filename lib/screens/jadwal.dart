@@ -15,72 +15,119 @@ class JadwalWidget extends StatefulWidget {
 
 class _JadwalWidgetState extends State<JadwalWidget> {
   Map<String, List<dynamic>> jadwalData = {};
-  Map<int, String> mataPelajaranCache =
-      {}; // Cache untuk menyimpan nama mata pelajaran
+  Map<int, String> mataPelajaranCache = {};
   bool isLoading = true;
+  String? errorMessage;
+  int? kelasId;
 
   @override
   void initState() {
     super.initState();
-    fetchJadwal(role: widget.role, id: int.parse(widget.id));
+    print('Debug - Initializing JadwalWidget with role: ${widget.role}, id: ${widget.id}');
+    _initializeData();
   }
 
-  // Fungsi untuk mengambil data mata pelajaran berdasarkan ID
-  Future<String> fetchMataPelajaran(int mapelId) async {
-    // Cek apakah data sudah ada di cache
-    if (mataPelajaranCache.containsKey(mapelId)) {
-      return mataPelajaranCache[mapelId] ?? '-';
-    }
-
-    try {
-      final response = await http.get(
-        Uri.parse('http://3.0.151.126/api/admin/mata-pelajarans/$mapelId'),
-        headers: {'Accept': 'application/json'},
-      );
-
-      print('Debug - Mata Pelajaran API Response: ${response.body}');
-
-      if (response.statusCode == 200) {
-        final decoded = json.decode(response.body);
-        final String namaMapel = decoded['data']['nama_mapel'] ?? '-';
-        // Simpan ke cache
-        mataPelajaranCache[mapelId] = namaMapel;
-        return namaMapel;
-      }
-    } catch (e) {
-      print('Error fetching mata pelajaran: $e');
-    }
-    return '-';
-  }
-
-  Future<void> fetchJadwal({required String role, required int id}) async {
+  Future<void> _initializeData() async {
     setState(() {
       isLoading = true;
+      errorMessage = null;
     });
 
     try {
-      // Base URL untuk jadwal
-      String url = 'http://3.0.151.126/api/admin/jadwal-pelajarans';
-
-      // Filter berdasarkan role
-      if (role == 'guru') {
-        url += '?guru_id=$id';
-      } else if (role == 'siswa') {
-        url += '?kelas_id=$id';
+      // Jika role siswa, kita perlu mendapatkan kelas_id dari relasi
+      if (widget.role == 'siswa') {
+        await _fetchKelasIdFromSiswa();
       }
+      await _fetchJadwal();
+    } catch (e) {
+      print('Error in _initializeData: $e');
+      setState(() {
+        errorMessage = 'Terjadi kesalahan saat memuat jadwal. Silakan coba lagi.';
+        isLoading = false;
+      });
+    }
+  }
 
-      print('Debug - Fetching URL: $url');
+  Future<void> _fetchKelasIdFromSiswa() async {
+    try {
+      print('Debug - Fetching kelas ID for siswa with pengguna_id: ${widget.id}');
+      
+      // Step 1: Get all siswa to find the one with matching pengguna_id
+      final siswaResponse = await http.get(
+        Uri.parse('http://3.0.151.126/api/admin/siswas'),
+        headers: {'Accept': 'application/json'},
+      ).timeout(const Duration(seconds: 10));
+
+      if (siswaResponse.statusCode == 200) {
+        final siswaData = json.decode(siswaResponse.body);
+        print('Debug - Siswa response: ${siswaResponse.body}');
+
+        // Find siswa with matching pengguna_id
+        final List<dynamic> siswaList = siswaData['data'];
+        final siswa = siswaList.firstWhere(
+          (s) => s['pengguna_id'].toString() == widget.id,
+          orElse: () => null,
+        );
+
+        if (siswa != null) {
+          print('Debug - Found siswa: ${siswa['nama_lengkap']}');
+          final kId = siswa['id_kelas'];
+          if (kId != null) {
+            setState(() {
+              kelasId = kId;
+            });
+            print('Debug - Set kelas_id to: $kelasId');
+          } else {
+            throw 'Kelas tidak ditemukan untuk siswa';
+          }
+        } else {
+          throw 'Data siswa tidak ditemukan';
+        }
+      } else {
+        throw 'Gagal mengambil data siswa. Status: ${siswaResponse.statusCode}';
+      }
+    } catch (e) {
+      print('Error fetching kelas ID: $e');
+      throw 'Gagal mendapatkan data kelas: $e';
+    }
+  }
+
+  Future<void> _fetchJadwal() async {
+    try {
+      // Build URL based on role
+      String url;
+      if (widget.role == 'guru') {
+        url = 'http://3.0.151.126/api/admin/jadwal-pelajarans?guru_id=${widget.id}';
+        print('Debug - Fetching jadwal for guru_id: ${widget.id}');
+      } else {
+        if (kelasId == null) {
+          throw 'Kelas ID tidak tersedia';
+        }
+        url = 'http://3.0.151.126/api/admin/jadwal-pelajarans?kelas_id=$kelasId';
+        print('Debug - Fetching jadwal for kelas_id: $kelasId');
+      }
 
       final response = await http.get(
         Uri.parse(url),
         headers: {'Accept': 'application/json'},
-      );
+      ).timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final decoded = json.decode(response.body);
-        final List<dynamic> dataList = decoded['data'] ?? [];
+        List<dynamic> dataList = decoded['data'] ?? [];
+        print('Debug - Jadwal response: ${response.body}');
+        
+        // Untuk siswa, filter jadwal berdasarkan kelas_id
+        if (widget.role == 'siswa') {
+          dataList = dataList.where((item) {
+            final itemKelasId = item['kelas_id']?.toString();
+            return itemKelasId != null && itemKelasId == kelasId.toString();
+          }).toList();
+        }
+        
+        print('Debug - Found ${dataList.length} jadwal entries');
 
-        // Mengumpulkan semua mapel_id yang unik
+        // Get unique mapel_ids
         Set<int> mapelIds = {};
         for (var item in dataList) {
           if (item['mapel_id'] != null) {
@@ -88,29 +135,26 @@ class _JadwalWidgetState extends State<JadwalWidget> {
           }
         }
 
-        // Mengambil data mata pelajaran untuk semua mapel_id
-        await Future.wait(
-          mapelIds.map((mapelId) => fetchMataPelajaran(mapelId)),
-        );
+        // Fetch mata pelajaran names
+        for (var mapelId in mapelIds) {
+          await _fetchMataPelajaran(mapelId);
+        }
 
+        // Group by day
         Map<String, List<dynamic>> grouped = {};
         for (var item in dataList) {
           String hari = (item['hari'] ?? '').toString().toLowerCase();
-          String formattedHari =
-              hari.isNotEmpty
-                  ? hari[0].toUpperCase() + hari.substring(1)
-                  : 'Unknown';
+          String formattedHari = hari.isNotEmpty
+              ? hari[0].toUpperCase() + hari.substring(1)
+              : 'Unknown';
 
           if (!grouped.containsKey(formattedHari)) {
             grouped[formattedHari] = [];
           }
 
-          // Tambahkan nama mata pelajaran ke item
           if (item['mapel_id'] != null) {
             int mapelId = int.parse(item['mapel_id'].toString());
-            String namaMapel = mataPelajaranCache[mapelId] ?? '-';
-            item['nama_mapel'] = namaMapel;
-            print('Debug - Added mapel name for ID $mapelId: $namaMapel');
+            item['nama_mapel'] = mataPelajaranCache[mapelId] ?? '-';
           }
 
           grouped[formattedHari]!.add(item);
@@ -119,18 +163,37 @@ class _JadwalWidgetState extends State<JadwalWidget> {
         setState(() {
           jadwalData = grouped;
           isLoading = false;
+          errorMessage = null;
         });
       } else {
-        setState(() {
-          isLoading = false;
-        });
-        print('Failed to load jadwal: ${response.body}');
+        throw 'Gagal mengambil jadwal: ${response.statusCode}';
       }
     } catch (e) {
+      print('Error in _fetchJadwal: $e');
       setState(() {
+        errorMessage = 'Gagal memuat jadwal: $e';
         isLoading = false;
       });
-      print('Error fetching jadwal: $e');
+    }
+  }
+
+  Future<void> _fetchMataPelajaran(int mapelId) async {
+    if (mataPelajaranCache.containsKey(mapelId)) return;
+
+    try {
+      final response = await http.get(
+        Uri.parse('http://3.0.151.126/api/admin/mata-pelajarans/$mapelId'),
+        headers: {'Accept': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final decoded = json.decode(response.body);
+        final String namaMapel = decoded['data']['nama_mapel'] ?? '-';
+        mataPelajaranCache[mapelId] = namaMapel;
+        print('Debug - Cached mapel name for ID $mapelId: $namaMapel');
+      }
+    } catch (e) {
+      print('Error fetching mata pelajaran $mapelId: $e');
     }
   }
 
