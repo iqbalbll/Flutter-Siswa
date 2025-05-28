@@ -274,7 +274,7 @@ class _JadwalWidgetState extends State<JadwalWidget> {
     return Container(
       margin: EdgeInsets.symmetric(horizontal: screenWidth * 0.02),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Colors.white,  
         borderRadius: BorderRadius.only(
           topRight: Radius.circular(screenWidth * 0.08),
           bottomLeft: Radius.circular(screenWidth * 0.08),
